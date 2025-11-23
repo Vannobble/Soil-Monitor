@@ -1,0 +1,21 @@
+[deploy]
+build.command = "echo 'No build needed'"
+
+[build]
+builder = "nixpacks"
+
+[[services]]
+name = "soil-monitor"
+start = "python server.py"
+type = "web"
+plan = "starter"
+
+[services.env]
+PORT = "5000"
+
+[services.checks]
+http.path = "/health"
+http.port = 5000
+http.interval = 30
+http.timeout = 10
+http.initialDelay = 5
