@@ -1,4 +1,4 @@
-# server.py - Production Ready
+# server.py - Diperbaiki untuk real-time updates
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -9,6 +9,7 @@ import ascon
 import os
 from datetime import datetime
 import logging
+import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -17,11 +18,15 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'soil_moisture_secret_production')
 CORS(app)
+
+# Socket.IO dengan configuration yang benar
 socketio = SocketIO(app, 
                    cors_allowed_origins="*",
                    async_mode='eventlet',
+                   ping_timeout=60,
+                   ping_interval=25,
                    logger=True,
-                   engineio_logger=True)
+                   engineio_logger=False)
 
 # Konfigurasi dari Environment Variables
 key = os.environ.get('ASCON_KEY', 'asconciphertest1').encode('utf-8')
@@ -34,7 +39,7 @@ MQTT_BROKER = os.environ.get('MQTT_BROKER', 'broker.hivemq.com')
 MQTT_PORT = int(os.environ.get('MQTT_PORT', 1883))
 MQTT_TOPIC = os.environ.get('MQTT_TOPIC', 'soil-ascon128')
 
-# Store data terakhir
+# Store data terakhir dan connected clients
 last_data = {
     'moisture': 0,
     'sensor': 'soil_moisture',
@@ -44,10 +49,13 @@ last_data = {
     'message_count': 0
 }
 
+connected_clients = 0
+
 def on_mqtt_connect(client, userdata, flags, rc):
     if rc == 0:
         logger.info(f"✅ Connected to MQTT broker: {MQTT_BROKER}")
         client.subscribe(MQTT_TOPIC)
+        logger.info(f"🎯 Subscribed to topic: {MQTT_TOPIC}")
     else:
         logger.error(f"❌ Failed to connect to MQTT, return code: {rc}")
 
@@ -80,9 +88,9 @@ def on_mqtt_message(client, userdata, msg):
             
             logger.info(f"✅ Decrypted moisture value: {moisture_value}%")
             
-            # Kirim ke semua client frontend
-            socketio.emit('sensor_data', last_data)
-            logger.info("📤 Sent to frontend via Socket.IO")
+            # Kirim ke semua connected clients
+            socketio.emit('sensor_data', last_data, broadcast=True)
+            logger.info(f"📤 Sent to {connected_clients} connected clients via Socket.IO")
             
         else:
             logger.error("❌ Decryption failed!")
@@ -107,28 +115,35 @@ def health():
         'status': 'healthy',
         'last_update': last_data['timestamp'],
         'message_count': last_data['message_count'],
+        'connected_clients': connected_clients,
         'service': 'soil-moisture-monitor'
     }
 
 @app.route('/api/data')
 def api_data():
-    return {
-        'moisture': last_data['moisture'],
-        'sensor': last_data['sensor'],
-        'unit': last_data['unit'],
-        'timestamp': last_data['timestamp'],
-        'message_count': last_data['message_count']
-    }
+    return last_data
 
 @socketio.on('connect')
 def handle_connect():
-    logger.info('✅ Client connected to Socket.IO')
+    global connected_clients
+    connected_clients += 1
+    logger.info(f'✅ Client connected. Total clients: {connected_clients}')
+    
     # Kirim data terakhir ke client baru
     socketio.emit('sensor_data', last_data)
+    logger.info('📤 Sent last data to new client')
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    logger.info('❌ Client disconnected from Socket.IO')
+    global connected_clients
+    connected_clients -= 1
+    logger.info(f'❌ Client disconnected. Total clients: {connected_clients}')
+
+@socketio.on('request_data')
+def handle_request_data():
+    """Client meminta data terbaru"""
+    socketio.emit('sensor_data', last_data)
+    logger.info('📤 Sent data on client request')
 
 def start_mqtt():
     try:
@@ -143,8 +158,10 @@ if __name__ == '__main__':
     start_mqtt()
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"🚀 Starting production server on port {port}")
+    
+    # Gunakan eventlet untuk performance better
     socketio.run(app, 
                  host='0.0.0.0', 
                  port=port, 
-                 debug=False, 
-                 allow_unsafe_werkzeug=True)
+                 debug=False,
+                 use_reloader=False)
