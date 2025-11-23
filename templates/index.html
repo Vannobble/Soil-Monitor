@@ -6,237 +6,74 @@
     <title>Soil Moisture Monitor - Real Time</title>
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* CSS sebelumnya... */
+        
+        .auto-update-status {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 0.8rem;
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+        
+        .auto-update-status.active {
+            background: rgba(107, 207, 127, 0.3);
+            color: #6bcf7f;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .moisture-level {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .percentage {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #4a90e2;
-            margin-bottom: 10px;
-            transition: all 0.5s ease;
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 30px;
-            background: #f0f0f0;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #4a90e2, #67b26f);
-            border-radius: 15px;
-            transition: width 0.5s ease;
-            position: relative;
-        }
-
-        .progress-text {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-
-        .status {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .status.critical {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        .status.warning {
-            background: #ffd93d;
-            color: #333;
-        }
-
-        .status.optimal {
-            background: #6bcf7f;
-            color: white;
-        }
-
-        .status.wet {
-            background: #4d96ff;
-            color: white;
-        }
-
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .data-item {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .data-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .data-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-            height: 400px;
-        }
-
-        .last-update {
-            text-align: center;
-            color: white;
-            margin-top: 20px;
+        
+        .last-update-time {
             font-size: 0.9rem;
             opacity: 0.8;
+            margin-top: 5px;
         }
-
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            z-index: 1000;
-        }
-
-        .connected {
-            background: #6bcf7f;
-            color: white;
-        }
-
-        .disconnected {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        .encrypted-data {
-            font-family: monospace;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            word-break: break-all;
+        
+        .connection-stats {
+            display: flex;
+            gap: 15px;
             margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 10px;
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
     <div class="connection-status disconnected" id="connectionStatus">
-        🔴 Disconnected
+        <i class="fas fa-wifi"></i> 🔴 Disconnected
+        <span class="auto-update-status" id="autoUpdateStatus">Manual</span>
     </div>
 
     <div class="container">
         <div class="header">
             <h1>🌱 Soil Moisture Monitor</h1>
             <p>Real-time monitoring sistem kelembaban tanah dengan enkripsi ASCON</p>
+            <div class="deployment-info">
+                <span class="server-status offline" id="serverStatus"></span>
+                Server: <span id="serverUrl">Loading...</span>
+            </div>
+            <div class="connection-stats">
+                <div class="stat-item">
+                    <i class="fas fa-sync"></i> Auto-Update: <span id="updateMode">OFF</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i> Last Data: <span id="lastDataTime">Never</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-database"></i> Total: <span id="totalMessages">0</span>
+                </div>
+            </div>
         </div>
 
+        <!-- Konten dashboard sama seperti sebelumnya -->
         <div class="dashboard">
             <div class="card">
-                <h2>💧 Status Kelembaban Tanah</h2>
+                <h2><i class="fas fa-tint"></i> Status Kelembaban Tanah</h2>
                 <div class="moisture-level">
                     <div class="percentage" id="moisturePercentage">0%</div>
                     <div class="progress-container">
@@ -245,13 +82,16 @@
                         </div>
                     </div>
                     <div class="status" id="statusText">
-                        Menunggu data...
+                        <i class="fas fa-sync fa-spin"></i> Menunggu koneksi...
+                    </div>
+                    <div class="last-update-time">
+                        <i class="fas fa-clock"></i> Update: <span id="updateTime">-</span>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h2>📊 Informasi Sensor</h2>
+                <h2><i class="fas fa-microchip"></i> Informasi Sensor</h2>
                 <div class="data-grid">
                     <div class="data-item">
                         <div class="data-label">Sensor Type</div>
@@ -266,14 +106,14 @@
                         <div class="data-value" id="messageCount">0</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Last Update</div>
-                        <div class="data-value" id="lastUpdateTime">-</div>
+                        <div class="data-label">Connection</div>
+                        <div class="data-value" id="connectionType">-</div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h2>🔐 Security Info</h2>
+                <h2><i class="fas fa-shield-alt"></i> Security Info</h2>
                 <div class="data-grid">
                     <div class="data-item">
                         <div class="data-label">Encryption</div>
@@ -286,27 +126,43 @@
                 </div>
                 <div class="data-label" style="margin-top: 15px;">Cipher Text:</div>
                 <div class="encrypted-data" id="cipherText">
-                    Tidak ada data
+                    <i class="fas fa-lock"></i> Menunggu data...
                 </div>
+                <button id="requestDataBtn" style="margin-top: 10px; padding: 8px 15px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    <i class="fas fa-sync"></i> Request Data Now
+                </button>
             </div>
         </div>
 
         <div class="chart-container">
-            <h2>📈 Riwayat Kelembaban</h2>
+            <h2><i class="fas fa-chart-line"></i> Riwayat Kelembaban (Real-time)</h2>
             <canvas id="moistureChart"></canvas>
         </div>
 
         <div class="last-update">
-            System started: <span id="systemStartTime"></span>
+            <i class="fas fa-clock"></i> System started: <span id="systemStartTime"></span> |
+            <i class="fas fa-globe"></i> Environment: <span id="environment">Production</span> |
+            <i class="fas fa-plug"></i> Connection: <span id="connectionInfo">Disconnected</span>
         </div>
     </div>
 
     <script>
+        // Konfigurasi untuk production
+        const config = {
+            serverUrl: window.location.origin,
+            reconnectInterval: 3000,
+            maxReconnectAttempts: 5,
+            autoReconnect: true
+        };
+
         // Variabel global
         let moistureData = [];
         let maxDataPoints = 20;
         let chart = null;
         let socket = null;
+        let reconnectAttempts = 0;
+        let isConnected = false;
+        let lastUpdateTimestamp = null;
 
         // Elemen DOM
         const connectionStatus = document.getElementById('connectionStatus');
@@ -320,6 +176,17 @@
         const cipherText = document.getElementById('cipherText');
         const lastUpdateTime = document.getElementById('lastUpdateTime');
         const systemStartTime = document.getElementById('systemStartTime');
+        const serverUrl = document.getElementById('serverUrl');
+        const serverStatus = document.getElementById('serverStatus');
+        const environment = document.getElementById('environment');
+        const autoUpdateStatus = document.getElementById('autoUpdateStatus');
+        const updateMode = document.getElementById('updateMode');
+        const lastDataTime = document.getElementById('lastDataTime');
+        const totalMessages = document.getElementById('totalMessages');
+        const updateTime = document.getElementById('updateTime');
+        const connectionType = document.getElementById('connectionType');
+        const connectionInfo = document.getElementById('connectionInfo');
+        const requestDataBtn = document.getElementById('requestDataBtn');
 
         // Inisialisasi Chart
         function initializeChart() {
@@ -335,12 +202,21 @@
                         backgroundColor: 'rgba(74, 144, 226, 0.1)',
                         borderWidth: 3,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointBackgroundColor: '#4a90e2',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -377,11 +253,127 @@
             });
         }
 
-        // Update chart dengan data baru
+        // Koneksi Socket.IO dengan reconnection logic
+        function connectSocket() {
+            console.log(`🔄 Connecting to server: ${config.serverUrl}`);
+            serverUrl.textContent = config.serverUrl;
+            
+            socket = io(config.serverUrl, {
+                transports: ['websocket', 'polling'],
+                timeout: 10000,
+                reconnection: config.autoReconnect,
+                reconnectionAttempts: config.maxReconnectAttempts,
+                reconnectionDelay: config.reconnectInterval
+            });
+
+            socket.on('connect', function() {
+                console.log('✅ Connected to server via Socket.IO');
+                isConnected = true;
+                connectionStatus.innerHTML = '<i class="fas fa-wifi"></i> 🟢 Connected (WebSocket)';
+                connectionStatus.className = 'connection-status connected';
+                autoUpdateStatus.textContent = 'Auto';
+                autoUpdateStatus.className = 'auto-update-status active';
+                updateMode.textContent = 'ON';
+                serverStatus.className = 'server-status online';
+                connectionType.textContent = 'WebSocket';
+                connectionInfo.textContent = 'WebSocket Live';
+                reconnectAttempts = 0;
+                
+                // Request data terbaru saat pertama connect
+                socket.emit('request_data');
+            });
+
+            socket.on('sensor_data', function(data) {
+                console.log('📨 Received real-time sensor data:', data);
+                lastUpdateTimestamp = new Date();
+                updateUI(data);
+            });
+
+            socket.on('disconnect', function(reason) {
+                console.log('❌ Disconnected from server:', reason);
+                isConnected = false;
+                connectionStatus.innerHTML = '<i class="fas fa-wifi"></i> 🔴 Disconnected';
+                connectionStatus.className = 'connection-status disconnected';
+                autoUpdateStatus.textContent = 'Manual';
+                autoUpdateStatus.className = 'auto-update-status';
+                updateMode.textContent = 'OFF';
+                serverStatus.className = 'server-status offline';
+                connectionType.textContent = 'Disconnected';
+                connectionInfo.textContent = 'Disconnected';
+                
+                if (reason === 'io server disconnect') {
+                    // Server memutus koneksi, reconnect
+                    socket.connect();
+                }
+            });
+
+            socket.on('connect_error', function(error) {
+                console.error('❌ Socket.IO connection error:', error);
+                connectionStatus.innerHTML = '<i class="fas fa-wifi"></i> 🔴 Connection Error';
+                connectionStatus.className = 'connection-status disconnected';
+                serverStatus.className = 'server-status offline';
+                connectionInfo.textContent = 'Connection Error';
+            });
+
+            socket.on('reconnect_attempt', function(attempt) {
+                console.log(`🔄 Reconnection attempt ${attempt}`);
+                connectionStatus.innerHTML = `<i class="fas fa-sync fa-spin"></i> 🔄 Reconnecting... (${attempt})`;
+            });
+
+            socket.on('reconnect', function(attempt) {
+                console.log(`✅ Reconnected after ${attempt} attempts`);
+            });
+        }
+
+        // Manual request data
+        function requestData() {
+            if (socket && isConnected) {
+                socket.emit('request_data');
+                console.log('📨 Manual data request sent');
+                
+                // Visual feedback
+                requestDataBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Requesting...';
+                setTimeout(() => {
+                    requestDataBtn.innerHTML = '<i class="fas fa-sync"></i> Request Data Now';
+                }, 1000);
+            } else {
+                console.log('❌ Cannot request data: Not connected');
+                alert('Tidak terhubung ke server. Silakan refresh halaman.');
+            }
+        }
+
+        // Update UI dengan data baru
+        function updateUI(data) {
+            const moistureValue = data.moisture;
+            const timestamp = data.timestamp || new Date().toLocaleTimeString('id-ID');
+            const now = new Date();
+
+            // Update basic information
+            sensorType.textContent = data.sensor;
+            sensorUnit.textContent = data.unit;
+            messageCountElement.textContent = data.message_count;
+            totalMessages.textContent = data.message_count;
+            lastDataTime.textContent = timestamp;
+            updateTime.textContent = now.toLocaleTimeString('id-ID');
+            cipherText.textContent = data.encrypted || 'No data';
+
+            // Update visual components dengan animasi
+            updateProgressBar(moistureValue);
+            updateStatus(moistureValue);
+            updateChart(moistureValue, timestamp);
+
+            // Add pulse animation untuk update baru
+            moisturePercentage.classList.add('pulse');
+            setTimeout(() => {
+                moisturePercentage.classList.remove('pulse');
+            }, 1000);
+
+            console.log(`✅ UI updated with moisture: ${moistureValue}%`);
+        }
+
         function updateChart(moistureValue, timestamp) {
             moistureData.push(moistureValue);
             
-            // Batasi jumlah data points
             if (moistureData.length > maxDataPoints) {
                 moistureData.shift();
                 chart.data.labels.shift();
@@ -389,35 +381,34 @@
 
             chart.data.labels.push(timestamp);
             chart.data.datasets[0].data = moistureData;
+            
+            // Smooth update chart
             chart.update('active');
         }
 
-        // Update status berdasarkan nilai kelembaban
         function updateStatus(moistureValue) {
             statusText.className = 'status ';
             
             if (moistureValue < 20) {
                 statusText.classList.add('critical');
-                statusText.innerHTML = '🚨 CRITICAL: TANAH SANGAT KERING!<br><small>💦 Perlu penyiraman segera!</small>';
+                statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 🚨 CRITICAL: TANAH SANGAT KERING!<br><small>💦 Perlu penyiraman segera!</small>';
             } else if (moistureValue < 40) {
                 statusText.classList.add('warning');
-                statusText.innerHTML = '⚠️ WARNING: TANAH KERING<br><small>💧 Pertimbangkan penyiraman</small>';
+                statusText.innerHTML = '<i class="fas fa-exclamation-circle"></i> ⚠️ WARNING: TANAH KERING<br><small>💧 Pertimbangkan penyiraman</small>';
             } else if (moistureValue < 70) {
                 statusText.classList.add('optimal');
-                statusText.innerHTML = '✅ Status Optimal<br><small>🌱 Kondisi tanah baik</small>';
+                statusText.innerHTML = '<i class="fas fa-check-circle"></i> ✅ Status Optimal<br><small>🌱 Kondisi tanah baik</small>';
             } else {
                 statusText.classList.add('wet');
-                statusText.innerHTML = '⚠️ WARNING: TANAH TERLALU BASAH<br><small>🛑 Kurangi penyiraman</small>';
+                statusText.innerHTML = '<i class="fas fa-exclamation-circle"></i> ⚠️ WARNING: TANAH TERLALU BASAH<br><small>🛑 Kurangi penyiraman</small>';
             }
         }
 
-        // Update progress bar
         function updateProgressBar(moistureValue) {
             progressBar.style.width = moistureValue + '%';
             progressText.textContent = moistureValue + '%';
             moisturePercentage.textContent = moistureValue + '%';
             
-            // Update warna progress bar berdasarkan nilai
             if (moistureValue < 20) {
                 progressBar.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
             } else if (moistureValue < 40) {
@@ -429,72 +420,20 @@
             }
         }
 
-        // Koneksi Socket.IO
-        function connectSocket() {
-            console.log('🔄 Connecting to Socket.IO server...');
-            
-            socket = io();
-
-            socket.on('connect', function() {
-                console.log('✅ Connected to server via Socket.IO');
-                connectionStatus.textContent = '🟢 Connected';
-                connectionStatus.className = 'connection-status connected';
-            });
-
-            socket.on('sensor_data', function(data) {
-                console.log('📨 Received sensor data:', data);
-                updateUI(data);
-            });
-
-            socket.on('disconnect', function() {
-                console.log('❌ Disconnected from server');
-                connectionStatus.textContent = '🔴 Disconnected';
-                connectionStatus.className = 'connection-status disconnected';
-            });
-
-            socket.on('connect_error', function(error) {
-                console.error('❌ Socket.IO connection error:', error);
-                connectionStatus.textContent = '🔴 Connection Error';
-                connectionStatus.className = 'connection-status disconnected';
-            });
-        }
-
-        // Update UI dengan data baru
-        function updateUI(data) {
-            const moistureValue = data.moisture;
-            const timestamp = data.timestamp || new Date().toLocaleTimeString();
-
-            // Update basic information
-            sensorType.textContent = data.sensor;
-            sensorUnit.textContent = data.unit;
-            messageCountElement.textContent = data.message_count;
-            lastUpdateTime.textContent = timestamp;
-            cipherText.textContent = data.encrypted || 'No data';
-
-            // Update visual components
-            updateProgressBar(moistureValue);
-            updateStatus(moistureValue);
-            updateChart(moistureValue, timestamp);
-
-            // Add pulse animation untuk update baru
-            moisturePercentage.classList.add('pulse');
-            setTimeout(() => {
-                moisturePercentage.classList.remove('pulse');
-            }, 1000);
-        }
+        // Event listeners
+        requestDataBtn.addEventListener('click', requestData);
 
         // Inisialisasi
-        function init() {
-            // Set system start time
+        async function init() {
             systemStartTime.textContent = new Date().toLocaleString('id-ID');
+            environment.textContent = window.location.hostname === 'localhost' ? 'Development' : 'Production';
             
             initializeChart();
             connectSocket();
             
-            console.log('🚀 Soil Moisture Monitor initialized');
+            console.log('🚀 Soil Moisture Monitor initialized with real-time updates');
         }
 
-        // Jalankan aplikasi
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
