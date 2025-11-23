@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 import logging
 import time
+import eventlet
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -19,13 +20,16 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'soil_moisture_secret_production')
 CORS(app)
 
+eventlet.monkey_patch()
+
 # Socket.IO dengan configuration yang benar
 socketio = SocketIO(app, 
                    cors_allowed_origins="*",
                    async_mode='eventlet',
-                   ping_timeout=60,
-                   ping_interval=25,
-                   logger=True,
+                   ping_timeout=300,  # Increase timeout
+                   ping_interval=60,
+                   max_http_buffer_size=1e8,  # Increase buffer size
+                   logger=False,  # Disable logger in production
                    engineio_logger=False)
 
 # Konfigurasi dari Environment Variables
@@ -157,11 +161,15 @@ def start_mqtt():
 if __name__ == '__main__':
     start_mqtt()
     port = int(os.environ.get('PORT', 5000))
+    
+    # Konfigurasi untuk production
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    
     logger.info(f"🚀 Starting production server on port {port}")
     
-    # Gunakan eventlet untuk performance better
     socketio.run(app, 
                  host='0.0.0.0', 
                  port=port, 
-                 debug=False,
-                 use_reloader=False)
+                 debug=debug_mode,
+                 use_reloader=False,
+                 log_output=False)  # Disable log output for better performance
